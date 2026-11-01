@@ -53,6 +53,8 @@ import { WeatherStrip } from "@/components/weather-strip";
 import { TripMap } from "@/components/trip-map";
 import { BudgetPanel } from "@/components/budget-panel";
 import { GroupBudget, type GroupBudgetAggregate } from "@/components/group-budget";
+import { TiltedGridHero } from "@/components/ui/tilted-grid-hero";
+import { getDestinationHeroImages } from "@/lib/destination-hero";
 
 type Stage = "greet" | "destination" | "days" | "budget" | "theme" | "travellers" | "searching" | "done";
 type PanelTab = "places" | "itinerary" | "map" | "budget";
@@ -173,6 +175,7 @@ export default function PlanPage() {
     () => CITIES.find((c) => dest.toLowerCase().includes(c.name.toLowerCase())),
     [dest]
   );
+  const heroImages = useMemo(() => getDestinationHeroImages(dest), [dest]);
   const cityName = cityObj?.name ?? "Jaipur";
   const isSample = !cityObj && !!dest;
   const cityPlaces = useMemo(() => {
@@ -884,6 +887,34 @@ export default function PlanPage() {
                   />
                 ) : (
                   <>
+                    {/* Destination 3D Cylinder Header */}
+                    <div className="mb-4 overflow-hidden rounded-2xl border border-line bg-card/60 shadow-sm">
+                      <TiltedGridHero
+                        images={heroImages}
+                        speed={4.5}
+                        tileHeight={48}
+                        aspectRatio={16 / 9}
+                        gap={6}
+                        curve={74}
+                        fade={12}
+                        className="h-[170px] w-full"
+                      >
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="pointer-events-none absolute bottom-3 left-4 right-4 flex items-end justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                              <Sparkles size={11} /> 3D Destination Stream
+                            </div>
+                            <h3 className="text-lg font-extrabold text-white">{destLabel}</h3>
+                            <p className="text-[11px] text-white/80">{cityObj?.tagline ?? "Curated sights · real reviews · live routing"}</p>
+                          </div>
+                          <Badge variant="glass" className="text-[11px] font-semibold text-white">
+                            {cityPlaces.length} curated spots
+                          </Badge>
+                        </div>
+                      </TiltedGridHero>
+                    </div>
+
                     <div className="mb-3 flex flex-wrap items-center gap-1.5">
                       {categories.map((c) => (
                         <button

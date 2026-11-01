@@ -487,3 +487,6 @@ export function Select({ className, children, ...props }: React.SelectHTMLAttrib
     </select>
   );
 }
+
+export { TiltedGridHero } from "./ui/tilted-grid-hero";
+export type { TiltedGridHeroProps, TiltedGridImage } from "./ui/tilted-grid-hero";

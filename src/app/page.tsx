@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -25,6 +25,8 @@ import { DestinationInput, type GeoResult } from "@/components/destination-input
 import { CITIES, THEMES } from "@/lib/data";
 import { cn, formatINR } from "@/lib/utils";
 import { Badge, Button, Card, Img, SectionHeading, Stars, AvatarStack } from "@/components/ui";
+import { TiltedGridHero } from "@/components/ui/tilted-grid-hero";
+import { getDestinationHeroImages } from "@/lib/destination-hero";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -38,6 +40,12 @@ export default function LandingPage() {
   const [dest, setDest] = useState("");
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [theme, setTheme] = useState("relaxation");
+
+  const heroImages = useMemo(() => getDestinationHeroImages(dest), [dest]);
+  const matchedCity = useMemo(
+    () => CITIES.find((c) => dest.toLowerCase().includes(c.name.toLowerCase())),
+    [dest]
+  );
 
   const go = (destination?: string, lat?: number, lng?: number, country?: string, themeId?: string) => {
     const params = new URLSearchParams();
@@ -104,6 +112,36 @@ export default function LandingPage() {
                   </Button>
                 </div>
               </div>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-muted">Live 3D preview:</span>
+                {[
+                  { name: "Jaipur", emoji: "🏰" },
+                  { name: "Bali", emoji: "🌴" },
+                  { name: "Kyoto", emoji: "⛩️" },
+                  { name: "Goa", emoji: "🌊" },
+                  { name: "Paris", emoji: "🗼" },
+                ].map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    onClick={() => {
+                      setDest(c.name);
+                      const city = CITIES.find((x) => x.name.toLowerCase() === c.name.toLowerCase());
+                      if (city) {
+                        setGeo({ id: city.id, name: city.name, country: city.country, lat: city.lat, lng: city.lng });
+                      }
+                    }}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs font-semibold transition-all",
+                      dest.toLowerCase().includes(c.name.toLowerCase())
+                        ? "border-accent bg-accent/15 text-accent shadow-sm"
+                        : "border-line bg-card/80 text-muted hover:border-accent/40 hover:text-fg"
+                    )}
+                  >
+                    {c.emoji} {c.name}
+                  </button>
+                ))}
+              </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-muted">I&apos;m feeling…</span>
                 {THEMES.slice(0, 5).map((t) => (
@@ -139,72 +177,113 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Hero visual */}
+          {/* Dynamic 3D Cylinder Hero Visual */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="relative mx-auto hidden w-full max-w-[520px] lg:block"
+            className="relative mx-auto w-full max-w-[560px]"
           >
-            <div className="relative h-[440px]">
-              <div className="absolute right-2 top-4 h-[300px] w-[280px] rotate-3 overflow-hidden rounded-[28px] border border-line bg-card shadow-lift">
-                <Img src={CITIES[1].image} alt="Bali" className="h-[300px] w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">Your trip</div>
-                  <div className="text-xl font-extrabold">7 days in Bali</div>
-                  <div className="mt-1 flex items-center gap-2 text-[11px] opacity-90">
-                    <span>🌴 Relaxation</span>·<span>2 travellers</span>·<span>₹1.2L</span>
+            <div className="relative h-[480px] w-full overflow-hidden rounded-[32px] border border-line bg-card/60 shadow-lift backdrop-blur">
+              {/* Tilted Grid Hero 3D Cylinder Marquee */}
+              <TiltedGridHero
+                images={heroImages}
+                speed={4.2}
+                tileHeight={34}
+                aspectRatio={16 / 10}
+                gap={7}
+                curve={78}
+                fade={14}
+                axis={50}
+                className="absolute inset-0 h-full w-full"
+              >
+                {/* Foreground Ambient & Glass Details */}
+                <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-5">
+                  {/* Top Status Badges */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-line/60 bg-card/90 px-3.5 py-1.5 shadow-md backdrop-blur">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
+                      </span>
+                      <span className="text-xs font-bold text-fg">
+                        {matchedCity ? `${matchedCity.name}, ${matchedCity.country}` : dest ? dest : "Live Global Sights"}
+                      </span>
+                    </div>
+
+                    <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-fg px-3 py-1.5 text-[10px] font-bold text-bg shadow-lift">
+                      <Sparkles size={11} className="text-accent" /> 3D Curved Cylinder
+                    </div>
+                  </div>
+
+                  {/* Mid Floating Badges */}
+                  <div className="flex items-center justify-between">
+                    <motion.div
+                      animate={{ y: [0, -6, 0] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                      className="pointer-events-auto rounded-2xl border border-line/80 bg-card/90 p-3 shadow-lift backdrop-blur"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                          {matchedCity?.name ?? "Weather"}
+                        </span>
+                        <CloudSun size={14} className="text-gold" />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-xl font-extrabold text-fg">
+                          {matchedCity?.name === "Jaipur" ? "31°" : matchedCity?.name === "Kyoto" ? "19°" : "28°"}
+                        </span>
+                        <span className="text-[10px] font-medium text-muted">
+                          {matchedCity?.bestSeason ? `Best: ${matchedCity.bestSeason}` : "☀️ Clear"}
+                        </span>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      animate={{ y: [0, 6, 0] }}
+                      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+                      className="pointer-events-auto rounded-2xl border border-line/80 bg-card/90 p-3 shadow-lift backdrop-blur"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent-soft text-accent">
+                          <Wallet size={14} />
+                        </span>
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Est. Budget</div>
+                          <div className="text-xs font-extrabold text-fg">
+                            ₹{formatINR(matchedCity?.from ?? 24000)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-1.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        Smart budget optimized ✓
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Bottom Destination Card & Quick Action */}
+                  <div className="pointer-events-auto rounded-2xl border border-line/80 bg-card/95 p-4 shadow-lift backdrop-blur">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-accent">
+                          <MapPin size={12} />
+                          <span>{matchedCity ? `${matchedCity.tagline}` : "3D curved cylinder stream"}</span>
+                        </div>
+                        <div className="mt-0.5 text-sm sm:text-base font-extrabold text-fg">
+                          {matchedCity ? `${matchedCity.name} Itinerary` : dest ? `${dest} Preview` : "Explore Curated Sights"}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="shrink-0 gap-1.5"
+                        onClick={() => go(matchedCity ? `${matchedCity.name}, ${matchedCity.country}` : dest, matchedCity?.lat, matchedCity?.lng, matchedCity?.country, matchedCity?.themes[0])}
+                      >
+                        Plan trip <ArrowRight size={13} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute left-0 top-10 w-[190px] rounded-2xl border border-line bg-card/90 p-3 shadow-lift backdrop-blur"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Ubud weather</span>
-                  <CloudSun size={14} className="text-gold" />
-                </div>
-                <div className="mt-1 flex items-end gap-2">
-                  <span className="text-2xl font-extrabold text-fg">28°</span>
-                  <span className="pb-1 text-[10px] text-muted">☀️ Clear</span>
-                </div>
-                <div className="mt-1 flex gap-1">
-                  {["☀️ 29°", "⛅ 28°", "🌦️ 27°"].map((d) => (
-                    <span key={d} className="rounded-md bg-card2 px-1.5 py-1 text-[9px] font-semibold text-muted">{d}</span>
-                  ))}
-                </div>
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-                className="absolute bottom-2 left-6 w-[200px] rounded-2xl border border-line bg-card/90 p-3 shadow-lift backdrop-blur"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-soft text-accent"><Wallet size={15} /></span>
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-muted">Budget guard</div>
-                    <div className="text-sm font-extrabold text-fg">₹1,08,400</div>
-                  </div>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-card2">
-                  <div className="h-full w-[78%] rounded-full bg-accent" />
-                </div>
-                <div className="mt-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">₹11,600 under budget ✓</div>
-              </motion.div>
-
-              <div className="absolute bottom-16 right-0 flex items-center gap-2 rounded-2xl border border-line bg-card/90 px-3 py-2 shadow-lift backdrop-blur">
-                <AvatarStack names={["You", "Kai", "Mira"]} size={24} />
-                <div className="text-[10px] font-semibold text-muted">3 friends in</div>
-              </div>
-
-              <div className="absolute right-6 top-[-8px] flex items-center gap-1.5 rounded-full bg-fg px-3 py-1.5 text-[10px] font-bold text-bg shadow-lift">
-                <Sparkles size={11} /> AI planned in 94s
-              </div>
+              </TiltedGridHero>
             </div>
           </motion.div>
         </div>
