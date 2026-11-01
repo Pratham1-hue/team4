@@ -107,3 +107,4 @@ export function getDestinationHeroImages(destination?: string): TiltedGridImage[
     { src: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80", alt: destination },
   ];
 }
+
