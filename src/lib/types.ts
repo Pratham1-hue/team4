@@ -20,7 +20,7 @@ export interface Review {
   rating: number;
   date: string;
   text: string;
-  source: "Google" | "Voyage" | "Tripadvisor";
+  source: "Google" | "Yatri" | "Tripadvisor";
   verified?: boolean;
 }
 

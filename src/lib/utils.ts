@@ -139,7 +139,7 @@ export function downloadICS(trip: Trip) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Voyage AI//Trip Planner//EN",
+    "PRODID:-//Yatri//Trip Planner//EN",
     "CALSCALE:GREGORIAN",
   ];
   trip.itinerary.forEach((day) => {
@@ -151,7 +151,7 @@ export function downloadICS(trip: Trip) {
       const end = `${date.replace(/-/g, "")}T${endH}${String(m).padStart(2, "0")}00`;
       lines.push(
         "BEGIN:VEVENT",
-        `UID:${trip.id}-${day.day}-${item.id}@voyage.ai`,
+        `UID:${trip.id}-${day.day}-${item.id}@yatri.app`,
         `DTSTART:${start}`,
         `DTEND:${end}`,
         `SUMMARY:${trip.title} — stop ${day.day}`,

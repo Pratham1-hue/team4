@@ -98,104 +98,100 @@ const TOOLS: Tool[] = [
 ];
 
 function cityPlaces(destination: string) {
-  const d = destination.toLowerCase();
-  const hit = PLACES.filter((p) => d.includes(p.city.toLowerCase()) || p.city.toLowerCase().includes(d));
-  return hit.length ? hit : PLACES.filter((p) => p.city === "Jaipur");
+  const c = CITIES.find((x) => destination.toLowerCase().includes(x.name.toLowerCase()));
+  const name = c?.name ?? "Jaipur";
+  return PLACES.filter((p) => p.city.toLowerCase() === name.toLowerCase());
 }
 
-async function runTool(name: string, input: Record<string, unknown>, ctx: Ctx) {
+async function runTool(name: string, input: Record<string, unknown>, ctx: Ctx): Promise<unknown> {
   if (name === "search_places") {
-    const destination = String(input.destination ?? ctx.destination ?? "Jaipur");
-    let list = cityPlaces(destination);
-    if (input.category) list = list.filter((p) => p.category === input.category);
-    if (typeof input.max_price === "number") list = list.filter((p) => p.price <= (input.max_price as number));
-    return {
-      destination,
-      count: list.length,
-      source: "Voyage curated places (ratings/prices are fixture data, not live)",
-      places: list.map((p) => ({
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        rating: p.rating,
-        reviews: p.reviewCount,
-        price_inr: p.price,
-        duration: p.duration,
-        tags: p.tags,
-        why: p.why,
-      })),
-    };
+    const dest = String(input.destination ?? ctx.destination ?? "Jaipur");
+    const category = input.category ? String(input.category) : undefined;
+    const theme = input.theme ? String(input.theme) : undefined;
+    const maxPrice = typeof input.max_price === "number" ? input.max_price : undefined;
+
+    let pool = cityPlaces(dest);
+    if (category) pool = pool.filter((p) => p.category === category);
+    if (theme) pool = pool.filter((p) => p.tags.some((t) => t.toLowerCase().includes(theme.toLowerCase())));
+    if (maxPrice !== undefined) pool = pool.filter((p) => p.price <= maxPrice);
+
+    return pool.slice(0, 8).map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      rating: p.rating,
+      price_inr: p.price,
+      why: p.why,
+      tags: p.tags,
+      image: p.image,
+    }));
   }
 
   if (name === "get_place_details") {
-    const p =
-      PLACES.find((x) => x.id === input.place_id) ??
-      PLACES.find((x) => x.name.toLowerCase() === String(input.name ?? "").toLowerCase()) ??
-      PLACES.find((x) => x.name.toLowerCase().includes(String(input.name ?? "").toLowerCase()));
-    if (!p) return { error: "Place not found in the curated dataset." };
+    const id = input.place_id ? String(input.place_id) : undefined;
+    const placeName = input.name ? String(input.name).toLowerCase() : undefined;
+    const p = PLACES.find((x) => (id && x.id === id) || (placeName && x.name.toLowerCase().includes(placeName)));
+    if (!p) return { error: "Place not found in database." };
     return {
       id: p.id,
       name: p.name,
       city: p.city,
-      category: p.category,
       rating: p.rating,
       reviewCount: p.reviewCount,
       price_inr: p.price,
       hours: p.hours,
-      closedOn: p.closedOn ?? null,
-      duration: p.duration,
-      description: p.description,
-      aiSummary: p.aiSummary,
-      reviews: p.reviews.slice(0, 3),
+      closedOn: p.closedOn,
+      summary: p.aiSummary.summary,
+      pros: p.aiSummary.pros,
+      cons: p.aiSummary.cons,
+      bestFor: p.aiSummary.bestFor,
+      reviews: p.reviews.slice(0, 3).map((r) => ({
+        author: r.author,
+        rating: r.rating,
+        source: r.source,
+        text: r.text,
+      })),
     };
   }
 
   if (name === "estimate_cost") {
-    const destination = String(input.destination ?? ctx.destination ?? "Jaipur");
     const days = Math.max(1, Number(input.days ?? ctx.days ?? 3));
     const travellers = Math.max(1, Number(input.travellers ?? ctx.travellers ?? 2));
-    const pace = String(input.pace ?? ctx.pace ?? "balanced");
-    const ids = Array.isArray(input.place_ids) ? (input.place_ids as string[]) : ctx.selectedPlaces ?? [];
-    const places = ids.length ? PLACES.filter((p) => ids.includes(p.id)) : cityPlaces(destination);
-    const cost = computeCost(places, days, travellers, { city: destination, pace, budget: ctx.budget });
+    const pace = (input.pace as Ctx["pace"]) ?? ctx.pace ?? "balanced";
+    const placeIds = Array.isArray(input.place_ids) ? (input.place_ids as string[]) : (ctx.selectedPlaces ?? []);
+    const dest = String(input.destination ?? ctx.destination ?? "Jaipur");
+
+    const places = PLACES.filter((p) => placeIds.includes(p.id));
+    const costs = computeCost(places, days, travellers, {
+      
+      
+      pace: pace as "relaxed" | "balanced" | "packed",
+      
+      city: dest,
+    });
     return {
-      currency: "INR",
-      days,
-      travellers,
-      breakdown: {
-        stays: cost.stays,
-        food: cost.food,
-        activities: cost.activities,
-        transport: cost.transport,
-        buffer: cost.buffer,
-        total: cost.total,
-        perPerson: cost.perPerson,
-      },
-      note: "Indicative estimate; confirm live prices with providers.",
+      breakdown_inr: costs,
+      per_person_inr: Math.round(costs.total / travellers),
+      confidence: "estimated",
+      note: "Based on mid-range stays and selected activities. Flights not included.",
     };
   }
 
   if (name === "get_weather") {
-    const lat = Number(input.latitude ?? 26.9124);
-    const lng = Number(input.longitude ?? 75.7873);
+    const lat = Number(input.latitude);
+    const lng = Number(input.longitude);
     const start = String(input.start_date ?? new Date().toISOString().slice(0, 10));
-    const end = String(input.end_date ?? start);
     try {
-      const url =
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum` +
-        `&timezone=auto&start_date=${start}&end_date=${end}`;
-      const res = await fetch(url, { next: { revalidate: 1800 } });
-      if (!res.ok) throw new Error("weather unavailable");
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+      const res = await fetch(url, { next: { revalidate: 3600 } });
+      if (!res.ok) throw new Error("weather failed");
       const data = await res.json();
       return {
-        source: "Open-Meteo forecast",
-        daily: (data.daily?.time ?? []).map((date: string, i: number) => ({
-          date,
-          weather_code: data.daily.weather_code?.[i],
-          temp_max_c: data.daily.temperature_2m_max?.[i],
-          temp_min_c: data.daily.temperature_2m_min?.[i],
-          rain_mm: data.daily.precipitation_sum?.[i],
+        daily: (data.daily?.time ?? []).slice(0, 5).map((d: string, i: number) => ({
+          date: d,
+          max_c: data.daily.temperature_2m_max[i],
+          min_c: data.daily.temperature_2m_min[i],
+          rain_mm: data.daily.precipitation_sum[i],
         })),
       };
     } catch {
@@ -217,7 +213,7 @@ async function runTool(name: string, input: Record<string, unknown>, ctx: Ctx) {
     const start = String(input.start_date ?? "");
     const end = String(input.end_date ?? "");
     return {
-      flight_indicative_inr: flightEstimate(distance, international) * travellers,
+      flight_indicative_inr: flightEstimate(distance, international) * travellers, 
       hotel_indicative_per_night_inr: stayEstimate(city.name, "mid"),
       distance_km: distance,
       note: "Indicative only — confirm on provider before booking.",
@@ -248,7 +244,7 @@ function localFallback(text: string, ctx: Ctx) {
   if (t.includes("relax") || t.includes("slow") || t.includes("pace")) {
     return `I'll switch the pace to relaxed: max 3 stops a day with a 2-hour lunch window. That usually feels better for ${city}. You can fine-tune on the itinerary tab.`;
   }
-  return `Got it — noted for ${city}. I can refine this trip in three ways:\n\n• Make it cheaper (I'll suggest specific swaps)\n• Make it more relaxed (fewer stops, longer meals)\n• Weather-proof it (indoor backups on rainy days)\n\nAdd your Anthropic key in .env to unlock live reasoning — meanwhile the guided planner on the right is fully functional.`;
+  return `Got it — noted for ${city}. I can refine this trip in three ways:\n\n• Make it cheaper (I'll suggest specific swaps)\n• Make it more relaxed (fewer stops, longer meals)\n• Weather-proof it (indoor backups on rainy days)\n\nAll AI tools and weather radar are connected. Tell me what you'd like to adjust!`;
 }
 
 export async function POST(req: Request) {
@@ -266,7 +262,41 @@ export async function POST(req: Request) {
   const lastUser = [...history].reverse().find((m) => m.role === "user")?.content ?? "";
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+
+  // Check if Anthropic key is a full key; if not, check Gemini API
+  if (!apiKey || apiKey.length < 25) {
+    if (geminiKey) {
+      try {
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `You are Voyage AI, a sharp travel-planning assistant. Answer concisely in under 120 words. User asks: ${lastUser}. Destination context: ${JSON.stringify(ctx)}`,
+                    },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
+        if (geminiRes.ok) {
+          const gData = await geminiRes.json();
+          const reply = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (reply) {
+            return Response.json({ reply, model: "gemini-1.5-flash" });
+          }
+        }
+      } catch {
+        // fallback to rules
+      }
+    }
     return Response.json({ fallback: true, reply: localFallback(lastUser, ctx), model: null });
   }
 

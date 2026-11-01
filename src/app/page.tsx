@@ -384,7 +384,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 text-base font-extrabold">
                 <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-fg"><Plane size={16} /></span>
-                Voyage<span className="text-accent">AI</span>
+                Yatri<span className="text-accent">.</span>
               </div>
               <p className="mt-2 max-w-sm text-xs leading-relaxed text-muted">
                 AI travel planner MVP built from the blueprint: agent core, structured UI payloads, live weather, maps and
@@ -400,7 +400,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-6 border-t border-line pt-5 text-[11px] text-muted">
-            © 2026 Voyage AI · Prices and ratings are indicative demo data · Always confirm with the provider before booking.
+            © 2026 Yatri · Prices and ratings are indicative demo data · Always confirm with the provider before booking.
           </div>
         </div>
       </footer>

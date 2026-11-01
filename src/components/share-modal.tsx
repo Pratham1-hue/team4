@@ -35,10 +35,10 @@ export function ShareModal({ trip, open, onClose }: { trip: Trip; open: boolean;
   };
 
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(
-    `Join my trip “${trip.title}” on Voyage AI ✈️\n${inviteUrl}`
+    `Join my trip “${trip.title}” on Yatri ✈️\n${inviteUrl}`
   )}`;
   const mailto = `mailto:?subject=${encodeURIComponent(`Join my trip: ${trip.title}`)}&body=${encodeURIComponent(
-    `Hey! I planned “${trip.title}” (${formatDate(trip.startDate)} – ${formatDate(trip.endDate)}) on Voyage AI.\n\nJoin as ${role}: ${inviteUrl}\n\nSee you there!`
+    `Hey! I planned “${trip.title}” (${formatDate(trip.startDate)} – ${formatDate(trip.endDate)}) on Yatri.\n\nJoin as ${role}: ${inviteUrl}\n\nSee you there!`
   )}`;
 
   return (

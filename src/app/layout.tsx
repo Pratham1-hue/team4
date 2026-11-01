@@ -11,14 +11,14 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Voyage AI — Your AI travel planner",
+  title: "Yatri — Plan once. Travel together.",
   description:
-    "Chat with an AI travel agent, pick places you love, and get a day-by-day itinerary with live weather, maps, budgets and group collaboration.",
-  keywords: ["AI travel planner", "itinerary", "trip planner", "weather", "maps", "budget"],
-  authors: [{ name: "Voyage AI" }],
+    "Your intelligent travel copilot with encrypted Travel Vault, live flight & train tracking, weather-smart packing, and group expense splitting.",
+  keywords: ["Yatri", "travel app", "AI travel planner", "travel vault", "train tracking", "flight status", "expense split"],
+  authors: [{ name: "Yatri" }],
   openGraph: {
-    title: "Voyage AI — Your AI travel planner",
-    description: "Plan a whole trip in minutes with an AI agent, live weather and real maps.",
+    title: "Yatri — Plan once. Travel together.",
+    description: "Your intelligent travel copilot with secure vault, live transit tracking, and group planning.",
     type: "website",
   },
 };

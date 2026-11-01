@@ -21,6 +21,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
+  Shield,
+  Plane,
+  Coins,
+  Luggage,
+  ShieldAlert,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -30,6 +35,11 @@ const NAV = [
   { href: "/", label: "Home", icon: Home },
   { href: "/plan", label: "Plan", icon: Sparkles },
   { href: "/trips", label: "My Trips", icon: Briefcase },
+  { href: "/vault", label: "Vault", icon: Shield },
+  { href: "/flights", label: "Transit", icon: Plane },
+  { href: "/expenses", label: "Expenses", icon: Coins },
+  { href: "/packing", label: "Packing", icon: Luggage },
+  { href: "/safety", label: "Safety", icon: ShieldAlert },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
@@ -64,6 +74,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const links = [
     ...NAV.map((n) => ({ label: n.label, href: n.href, sub: "Navigate", icon: <n.icon size={15} /> })),
     { label: "New trip", href: "/plan", sub: "Start planning with AI", icon: <Plus size={15} /> },
+    { label: "Travel Vault", href: "/vault", sub: "Secure passports, tickets & PIN lock", icon: <Shield size={15} /> },
+    { label: "Flight & Train Tracker", href: "/flights", sub: "Live status & weather radar", icon: <Plane size={15} /> },
+    { label: "Group Expenses & Split", href: "/expenses", sub: "Split bills & optimal settlements", icon: <Coins size={15} /> },
+    { label: "Weather-Smart Packing", href: "/packing", sub: "Checklist tuned to forecast", icon: <Luggage size={15} /> },
+    { label: "Emergency & Safety Hub", href: "/safety", sub: "Offline numbers & paramedic card", icon: <ShieldAlert size={15} /> },
     ...trips.slice(0, 5).map((t) => ({
       label: t.title,
       href: `/trips/${t.id}`,
@@ -80,12 +95,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-accent-fg shadow-[0_8px_20px_-8px_var(--accent)] transition-transform group-hover:-rotate-6">
               <Compass size={20} strokeWidth={2.4} />
             </span>
-            <span className="text-lg font-extrabold tracking-tight">
-              Voyage<span className="text-accent">AI</span>
+            <span className="text-xl font-black tracking-tight">
+              Yatri<span className="text-accent">.</span>
             </span>
           </Link>
 
-          <nav className="ml-4 hidden items-center gap-1 md:flex">
+          <nav className="ml-4 hidden items-center gap-1 md:flex overflow-x-auto scrollbar-none">
             {NAV.map((n) => {
               const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
               return (
@@ -93,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={n.href}
                   href={n.href}
                   className={cn(
-                    "shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                    "shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
                     active ? "bg-accent-soft text-accent" : "text-muted hover:bg-card2 hover:text-fg"
                   )}
                 >
@@ -134,15 +149,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+      <main className="min-h-[calc(100vh-4rem)] pb-20 md:pb-6">{children}</main>
 
       {/* Mobile bottom nav */}
       <nav className="glass fixed inset-x-0 bottom-0 z-50 border-t border-line/70 pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
-          {NAV.map((n) => {
+          {[
+            { href: "/", label: "Home", icon: Home },
+            { href: "/trips", label: "Trips", icon: Briefcase },
+            { href: "/plan", label: "Plan", icon: Plus, isSpecial: true },
+            { href: "/vault", label: "Vault", icon: Shield },
+            { href: "/flights", label: "Transit", icon: Plane },
+          ].map((n) => {
             const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
-            const isPlan = n.href === "/plan";
-            if (isPlan) {
+            if (n.isSpecial) {
               return (
                 <Link
                   key={n.href}
@@ -158,9 +178,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             }
             return (
-              <Link key={n.href} href={n.href} className={cn("flex flex-col items-center gap-1 px-3 py-1", active ? "text-accent" : "text-muted")}>
+              <Link
+                key={n.href}
+                href={n.href}
+                className={cn("flex flex-col items-center gap-1 px-3 py-1", active ? "text-accent" : "text-muted")}
+              >
                 <n.icon size={20} />
-                <span className="text-[10px] font-bold">{n.label.replace("My ", "")}</span>
+                <span className="text-[10px] font-bold">{n.label}</span>
               </Link>
             );
           })}
@@ -184,7 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   autoFocus
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search trips and actions…"
+                  placeholder="Search trips, vault, flights, packing, safety…"
                   className="w-full bg-transparent text-sm text-fg outline-none placeholder:text-muted"
                 />
                 <button onClick={() => setPaletteOpen(false)} className="text-muted hover:text-fg"><X size={15} /></button>
@@ -210,7 +234,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </button>
                 ))}
               </div>
-              <div className="border-t border-line px-4 py-2 text-[10px] text-muted">Voyage AI · ⌘K to open · Esc to close</div>
+              <div className="border-t border-line px-4 py-2 text-[10px] text-muted">Yatri · ⌘K to open · Esc to close</div>
             </motion.div>
           </motion.div>
         )}

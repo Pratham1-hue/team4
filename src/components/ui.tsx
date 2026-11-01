@@ -460,3 +460,30 @@ export function LinkArrow({ children }: { children: React.ReactNode }) {
     </span>
   );
 }
+
+
+export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      className={cn(
+        "h-10 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg transition-colors placeholder:text-muted focus:border-accent focus:outline-none disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export function Select({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cn(
+        "h-10 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg transition-colors focus:border-accent focus:outline-none disabled:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </select>
+  );
+}

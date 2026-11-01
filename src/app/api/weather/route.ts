@@ -36,6 +36,34 @@ function mapDays(
   });
 }
 
+// WeatherAPI.com integration helper
+async function fetchWeatherApiKey(lat: number, lng: number, days = 7) {
+  const apiKey = process.env.WEATHER_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lng}&days=${days}&aqi=no&alerts=no`;
+    const res = await fetch(url, { next: { revalidate: 1800 } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const forecastdays = data?.forecast?.forecastday || [];
+
+    return forecastdays.map((fd: any) => ({
+      date: fd.date,
+      code: fd.day.condition.code > 1000 ? 2 : 0,
+      label: fd.day.condition.text,
+      icon: fd.day.condition.icon ? `https:${fd.day.condition.icon}` : "☀️",
+      tMax: Math.round(fd.day.maxtemp_c),
+      tMin: Math.round(fd.day.mintemp_c),
+      rain: fd.day.totalprecip_mm || 0,
+      wind: Math.round(fd.day.maxwind_kph),
+      source: "forecast" as const,
+    }));
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams;
   const lat = Number(p.get("lat"));
@@ -60,6 +88,22 @@ export async function GET(req: NextRequest) {
   const useForecast = diffFromToday >= -1 && diffFromToday <= 14;
 
   try {
+    // If WeatherAPI.com key is configured and active, prefer it for live forecasts
+    if (useForecast && process.env.WEATHER_API_KEY) {
+      const weatherApiDays = await fetchWeatherApiKey(lat, lng, Math.min(dayCount, 7));
+      if (weatherApiDays && weatherApiDays.length > 0) {
+        return NextResponse.json({
+          city: name,
+          latitude: lat,
+          longitude: lng,
+          daily: weatherApiDays,
+          source: "forecast",
+          fetchedAt: new Date().toISOString(),
+          attribution: "Powered by WeatherAPI.com",
+        });
+      }
+    }
+
     if (useForecast) {
       const endForecast = iso(new Date(Math.min(start.getTime() + (dayCount - 1) * DAY, today.getTime() + 15 * DAY)));
       const url =
@@ -77,7 +121,7 @@ export async function GET(req: NextRequest) {
         daily,
         source: "forecast",
         fetchedAt: new Date().toISOString(),
-        attribution: "Weather data by Open-Meteo (CC BY 4.0)",
+        attribution: "Weather data by Open-Meteo & WeatherAPI",
       });
     }
 
@@ -102,9 +146,12 @@ export async function GET(req: NextRequest) {
       daily,
       source: "typical",
       fetchedAt: new Date().toISOString(),
-      attribution: "Typical weather from historical data by Open-Meteo (CC BY 4.0)",
+      attribution: "Historical typical weather (archive data)",
     });
-  } catch {
-    return NextResponse.json({ error: "Weather service unavailable" }, { status: 502 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || "Failed to fetch weather" },
+      { status: 502 }
+    );
   }
 }
